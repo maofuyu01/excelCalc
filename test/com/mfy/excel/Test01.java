@@ -30,6 +30,13 @@ public class Test01 {
         adapter.data.forEach(r -> {
             System.out.println(Arrays.toString(r.toArray()));
         });
+
+        calc.setCellExpression("B1","B1==8?1:2");
+
+        System.out.println("=======================");
+        adapter.data.forEach(r -> {
+            System.out.println(Arrays.toString(r.toArray()));
+        });
     }
 
     @Test

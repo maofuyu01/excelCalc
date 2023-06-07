@@ -22,27 +22,35 @@ public class ExcelCalc<T> {
         this.adapter = adapter;
         expressionMap = adapter.getAllExMap();
         cellPattern = adapter.getCellPattern();
-        expressionMap.forEach((k, v) -> {
-            if (v.trim().equals("")) {
-                return;
-            }
-            Matcher matcher = cellPattern.matcher(v);
-            while (matcher.find()) {
-                String s = matcher.group();
-                Set<String> refSet = referencedMap.getOrDefault(s, new HashSet<>());
-                refSet.add(k);
-                referencedMap.put(s, refSet);
-            }
-        });
+        expressionMap.forEach(this::updateExpressMap);
     }
 
-    public void calcCell(String calcCell) throws ScriptException {
+    public void setCellExpression(String cell, String expression) {
+        expressionMap.put(cell, expression);
+        updateExpressMap(cell, expression);
+        calcCell(cell);
+    }
+
+    private void updateExpressMap(String cell, String expression) {
+        if (expression == null || expression.trim().equals("")) {
+            return;
+        }
+        Matcher matcher = cellPattern.matcher(expression);
+        while (matcher.find()) {
+            String s = matcher.group();
+            Set<String> refSet = referencedMap.getOrDefault(s, new HashSet<>());
+            refSet.add(cell);
+            referencedMap.put(s, refSet);
+        }
+    }
+
+    public void calcCell(String calcCell) {
         Set<String> hadCalc = new HashSet<>();
         calcCell0(calcCell, hadCalc);
     }
 
 
-    private void calcCell0(String calcCell, Set<String> hadCalc) throws ScriptException {
+    private void calcCell0(String calcCell, Set<String> hadCalc) {
         String script = expressionMap.get(calcCell);
         if (hadCalc.contains(calcCell) || script == null) {
             return;
@@ -56,7 +64,11 @@ public class ExcelCalc<T> {
             Object data = adapter.getData(cell);
             script = script.replace(cell, data.toString());
         }
-        adapter.setData(calcCell, (T) js.eval(script));
+        try {
+            adapter.setData(calcCell, (T) js.eval(script));
+        } catch (ScriptException e) {
+            throw new RuntimeException("解析单元格" + calcCell + "(" + expressionMap.get(calcCell) + ")失败，请检查。");
+        }
         hadCalc.add(calcCell);
         if (referencedMap.get(calcCell) != null) {
             for (String refCell : referencedMap.get(calcCell)) {

@@ -48,6 +48,6 @@ class Adapter implements IAdapter<Integer> {
 
     @Override
     public Pattern getCellPattern() {
-        return Pattern.compile("\\w*?\\d+");
+        return Pattern.compile("\\w+\\d+");
     }
 }
